@@ -1,0 +1,1965 @@
+{
+    "RuleSymbols": {
+
+        //预定义表达式, 
+        //使用限制: 路径为/分割
+        "D": "([^/]+)", // 目录
+        "DIR":  "([^/]+/)", // 目录带斜杠
+        "DIRS": "(([^/]+/)+)", // 多级带斜杠目录
+        "PNX": "([^/]+/)*[^/]+\\.[^/\\.]+$", //子路径
+        "FNX": "([\\w,\\.\\s-]+\\.[\\w]+$)", //文件名和扩展名
+        "EXT": "(\\.[\\w]+$)",
+        "FN": "([\\w,\\.\\s-]+(?=\\.))", //文件名
+        "LV": "((?i)lv)" //不区分大小写的Lod串  
+    },
+        
+    // 外部传入的预定义符号列表
+    // PLATFORM     当前构建的目标平台
+    // REGION       当前构建的区域
+
+    //Lod后缀定义，注意打包的Lod也需要在这个表中
+    "LodDefines": {
+        "_lv0": 0,
+        "_lv1": 1,
+        "_lv2": 2,
+        "_lv3": 3,
+        "_lv4": 4,
+    },
+
+    //用于重载文件的功能(实现中）
+    "SearchDirectories": [
+        "Assets/OuterResources/ABResources/",
+        //"$(PROJECT_ROOT)/PersistData/$(PLATFORM)/",
+        //"$(PROJECT_ROOT)/../Tables/ResBin/$(REGION)/client/Databins"
+        "CDNRes/",
+        "PackBytes/"
+    ],
+
+    "TypeDefines": {
+
+        //目录名中部分限定
+        "(^|/)Lua/M/": "MainLua",
+        "(^|/)Lua/L/": "LogicLua",
+        "(^|/)Lua/C/": "CommonLua",
+        "(^|/)Lua/Debugger/": "CommonLua",
+        "^$(DIR)*UIForSpriteAtlas": "Sprite",
+        "^$(DIR)*LightMap_": "LightMap",
+        "^$(DIR)*UITextures": "TextureOne",
+        "^$(DIR)*PlayerExTexture": "PlayerExTexture",
+        "^$(DIR)*Sound": "Sound",
+        "^$(DIR)*Databins": "Databin",
+
+        //文件名前缀
+        "^$(DIR)+age_$(FNX)$": "Age",
+        "^$(DIR)+actor_$(FNX)$": "Actor",
+        "^$(DIR)+bt_$(FNX)$": "BT",
+        "^$(DIR)+entity_$(FNX)$": "Entity",
+        "^$(DIR)+scene_$(FNX)$": "Scene",
+        "^$(DIR)+nav_$(FNX)$": "Nav",
+        "^$(DIR)+movie_$(FNX)$": "Movie",
+        "^$(DIR)+curv_$(FNX)$": "CureData",
+        "^$(DIR)+uicfg_$(FNX)$": "UICfg",
+        "^$(DIR)+inputcfg_$(FNX)$": "SwitchInputCfg",
+        "^$(DIR)+snd_$(FNX)$": "Sound",
+        "^$(DIR)+warmup_$(FNX)$": "WarmupCfg",
+        "^$(DIR)+gmcfg_$(FNX)$": "GMCfg",
+        "^$(DIR)+languagemap_$(FNX)$": "LanMapCfg",
+        "^$(DIR)+fresh_$(FNX)$": "IFixPatch",
+        "^$(DIR)+swivib_$(FNX)$": "SwitchVibrationFile",
+        "^$(DIR)+localizationCfg_$(FNX)$": "LocalizationCfg",
+
+
+        //后缀限定
+        "\\.bnk$": "Sound",
+        "\\.wem$": "Sound",
+        "\\.otf$": "Font",
+        "\\.ttf$": "Font",
+        "\\.OTF$": "Font",
+        "\\.TTF$": "Font",
+        "\\.shader$": "Shader",
+        "\\.shadergraph$": "Shader",
+        "\\.spriteforatlas$": "Sprite",
+        "\\.spriteatlas$": "SpriteAtlas",
+        "\\.prefab$": "GameObject",
+        "\\.mat$": "Material"
+    },
+
+    /*  说明:
+        1. Lod资源包需要在名字上体现Lod，名字上体现了Lod的Bundle包，可以保证Lod最低的包，包含一个Lod资源(不一定带后缀）
+        2. Group是一组AB包，分组后，在组内可以进行Lod分包
+    */
+
+    "Classes": [
+
+        //-------------------剔除(写在最前边)---------------------
+        {
+            //排除SpriteAtlas自身
+            "Class": "--STRIP_SpriteAtlas--",
+            "Flags": "Indexier", //作为收集器，它负责引入资源
+            "BasePath": "Assets/OuterResources/ABResources/SpriteAtlas"
+        },
+        {
+            //排除非当前区域的
+            "Class": "--STRIP_Region--",
+            "Flags": "Strip",
+            "BasePath": "Assets/OuterResources/ABResources/LocalizationRes/",
+            "Rule": "(?!(?i)$(REGION_RES))\\w+/"
+        },
+
+		{
+            "Class": "--STRIP_Switch_BpVideo--",
+            "Flags": "Strip",
+            "BasePath": "Assets/OuterResources/ABResources/LocalizationRes",
+            "Rule": "$(DIR)*SplashVideo/[Bb][p]{0,1}[0-9]{2}pv_[0-9_]+.mp4",
+			"Platform": "Switch"
+        },
+
+        {
+            //排除Age XML
+            "Class": "--STRIP_Age_XML--",
+            "Flags": "Strip",
+            "BasePath": "Assets/OuterResources/ABResources/Age"
+            // "Rule": "$(DIR)*(age_\\w+.xml)"
+        },
+
+        {
+            //排除EditorRes
+            "Class": "--STRIP_EditorRes--",
+            "Flags": "LiteStrip", //
+            "SubPaths": [
+                "Assets/OuterResources/ABResources/CustMapDataEditorRes"
+                // "Assets/OuterResources/ABResources/ArtRes/FxDelete"
+            ]
+        },
+
+        //非Switch平台剔除Switch平台的NXpkmOSS资源
+        {
+            "Class": "--STRIP_Switch_OSS--",
+            "Flags": "LiteStrip",
+            "BasePath": "Assets/OuterResources/ABResources/OSS",
+            "Platform": "^(?!Switch)", //^表示限定开头，?!Switch表示不是Switch平台，合在一起就是匹配开头不是Switch
+            "Rule": "NXpkmOSS\\.\\w+"
+        },
+
+        //剔除Debugger资源
+        {
+            "Class": "--STRIP_VisionDebugger--",
+            "Flags": "LiteStrip",
+            "BasePath": "Assets/OuterResources/ABResources/VisionDebugger",
+            "Rule": "(?:pref_fowTex|pref_fowDebugger|pref_sightblocker_debug_cube|pref_VisionDebugger)"
+        },
+        //剔除Lua Debugger
+        {
+            "Class": "--STRIP_Lua_txt--",
+            "Flags": "Strip",
+            "BasePath": "Assets/OuterResources/ABResources/Lua"
+        },
+        //剔除Lua Debugger
+        {
+            "Class": "--STRIP_PackLuaDebugger--",
+            "Flags": "Strip",
+            "BasePath": "PackBytes/Lua/Debugger"
+        },
+        //剔除OuterResources/ABResources/Actors
+        {
+            "Class": "--STRIP_OuterResources_ABResources_Actors--",
+            "Flags": "Strip",
+            "BasePath": "Assets/OuterResources/ABResources/Actors"
+        },
+        //剔除OuterResources/ABResources/Entities
+        {
+            "Class": "--STRIP_OuterResources_ABResources_Entities--",
+            "Flags": "Strip",
+            "BasePath": "Assets/OuterResources/ABResources/Entities"
+        },
+		//剔除AvatarTest
+        {
+            "Class": "--STRIP_AvatarTest--",
+            "Flags": "Strip",
+            "BasePath": "Assets/OuterResources/ABResources/UI/OutSide/AvatarTest"
+        },
+        //剔除CN
+        // {
+        //     "Class": "--STRIP_UI_CN--",
+        //     "Flags": "Strip",
+        //     "BasePath": "Assets/OuterResources/ABResources/UI/Cn"
+        // },
+        //剔除
+        {
+            "Class": "--STRIP_Others--",
+            "Flags": "Strip",
+            "BasePath": "Assets/OuterResources/ABResources",
+            "SubPaths": [
+                "ArtRes/TestRes",
+                "ArtRes/Scenes/TestScenes",
+                "ArtRes/Scenes/StripScenes",
+                "ArtRes/Player/female",
+                "ArtRes/Player/male",
+                "ArtRes/Player/controller",
+                "ArtRes/Player/Strip",
+                "ArtRes/Scenes/AvatarScenes/Strip",
+                "ArtRes/Heroes/Strip"
+            ]
+        },
+
+		//----------------------------------特殊资源-----------------------------------
+		//----------------------------------通过SubTools构建时裁剪-----------------------
+		// {
+        //     "Class": "--GMSkillTestSpriteResource--",
+        //     "Flags": "GMRes, Strip",
+		// 	"Packer": "Bundle",
+		// 	"Target": "Bundles/GMSkillTest/GMSpriteAtals",
+        //     "BasePath": "Assets/ResourcesRaw/UIForSpriteAtlas/Mobile/DLC0/System/GMSkillTest"
+        // },
+		// {
+        //     "Class": "--GMSkillTestPageResource--",
+        //     "Flags": "GMRes, Strip",
+		// 	"Packer": "Bundle",
+		// 	"Target": "Bundles/GMSkillTest/GMPrefab",
+        //     "BasePath": "Assets/OuterResources/ABResources/UI/OutSide/GMSkillTest"
+        // },
+        //-------------------Common Begin-----------------------
+        {
+            "Class": "LiteFont",
+            "Packer": "Bundle",
+            "Flags": "KeepInMem",
+            "BasePath": "Assets/OuterResources/ABResources/Fonts",
+            "Rule": "$(DIR)*(?<FontFileName>Nishiki_Font|Nishiki_Font_chs_Bold|Nishiki_Number|Nishiki_Font_Empty)$(EXT)",
+            "Target": "Bundles/Common/Font_$(FontFileName)",
+            "Group": "Common",
+            "DlcId": 0
+        },
+
+        {
+            "Class": "ActivityFont",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/Fonts",
+            "Rule": "$(DIR)*(?<FontFileName>[^/]+)_Bold$(EXT)",
+            "Target": "Bundles/Common/Font_$(FontFileName)_Bold",
+            "Group": "Common",
+            "DlcId": 0
+        },
+
+        {
+            "Class": "CommonFont",
+            "Packer": "Bundle",
+            "Flags": "KeepInMem",
+            "BasePath": "Assets/OuterResources/ABResources/Fonts",
+            "Rule": "$(DIR)*(?<FontFileName>[^/]+)$(EXT)",
+            "Target": "Bundles/Common/Font_$(FontFileName)",
+            "Group": "Common",
+            "DlcId": 0
+        },
+
+        //---------------------------------- Shaders -----------------------------------
+        {
+            //SVC需要跟它附带的Shader打在一起，才能保证引用到的Shader能正确被裁剪
+            "Class": "ShaderVariants",
+            "Packer": "Bundle",
+            "Flags": "KeepInMem, IncludeDependency, SplitRaw",
+            "BasePath": "Assets/OuterResources/ABResources/RenderSettings/svc/",
+            "Target": "Bundles/Common/Shaders",
+            "Group": "Common"
+        },
+        {
+            "Class": "CommonShader",
+            "Packer": "Bundle",
+            "Flags": "KeepInMem, SplitRaw",
+            "Target": "Bundles/Common/Shaders",
+            "Group": "Common",
+            "SubPaths": [
+                "Assets/OuterResources/ABResources/ArtRes/Shaders/UI",
+                "Assets/OuterResources/ABResources/3DUI/Shaders",
+                "Assets/ResourcesRaw/Shader/"
+            ]
+        },
+        {
+            "Class": "CommonOtherShaders",
+            "Packer": "Bundle",
+            "Flags": "KeepInMem,SplitRaw",
+            "BasePath": "Assets/OuterResources/ABResources",
+            "Rule": "$(DIR)*$(FN).(shader|shadervariant)",
+            "Target": "Bundles/Common/Shaders",
+            "Group": "Common"
+        },
+        {
+            "Class": "CommonRenderSettings",
+            "Packer": "Bundle",
+            "Flags": "KeepInMem, SplitRaw",
+            "BasePath": "Assets/ResourcesRaw/RenderSettings/",
+            "Rule": "$(DIR)*$(FNX)",
+            "Target": "Bundles/Common/Shaders",
+            "Group": "Common"
+        },
+        {
+            "Class": "CommonRenderPipeline",
+            "Packer": "Bundle",
+            "Flags": "KeepInMem, SplitRaw",
+            "BasePath": "Packages/",
+            "SubPaths": [
+                "com.unity.render-pipelines.universal/",
+                "com.unity.shadergraph/",
+                "com.coffee.ui-particle"
+            ],
+            "Rule": "$(DIR)*$(D SubDir)/$(FN)",
+            "Target": "Bundles/Common/Shaders",
+            "Group": "Common"
+        },
+        //----------------------------------Sprites -----------------------------------
+
+        {
+            "Class": "Battle_UI/Sprites",
+            "Packer": "Bundle",
+            "Flags": "Exported, DisableZSTD",
+            "Group": "Common",
+            "BasePath": "Assets/ResourcesRaw/UIForSpriteAtlas/Mobile/DLC0/Battle/AllBattle_sa/",
+            "Target": "Bundles/SpriteAtlas/Sa_AllBattle_sa"
+        },
+
+        {
+            "Class": "UI/Sprites",
+            "Packer": "Bundle",
+            "Flags": "Exported",
+            "Group": "Common",
+            "BasePath": "Assets/ResourcesRaw/UIForSpriteAtlas/",
+            
+            "Rule": "(?<SubDir>([^/]+/)*)(?<AtlasName>\\w+_(sa|truecolor))/(?<FollowingDir>([^/]+/)*)$(FNX)",
+            "Target": "Bundles/SpriteAtlas/Sa_$(AtlasName)"
+
+            //默认按目录打包
+            // "Rule": "$(DIR)*(?<DirName>([^/]+/){2})(?<Kind>Battle|Common|System)/",
+            // "Target": "Bundles/SpriteAtlas/Sa$(Kind)",
+            //图集目录按图集打包
+            // "SubRules": [
+            //     {
+            //         "Name": "AtlasSubFolders",
+            //         "Rule": "(?<SubDir>([^/]+/)*)(?<AtlasName>\\w+_(sa|truecolor))/(?<FollowingDir>([^/]+/)*)$(FNX)",
+            //         "Target": "$(DefaultTarget)/Sa_$(AtlasName)"
+            //     }
+            // ]
+        },
+        {
+            "Class": "Common",
+            "BasePath": "Assets/OuterResources/ABResources/",
+            "Rule": "(ArtRes/Shaders|UIMat)/$(DIR)*$(FNX)",
+            "Target": "Bundles/Common/ArtCommonRes",
+            "Flags": "DisableZSTD",
+            "Group": "Common",
+            "Packer": "Bundle"
+        },
+
+        //-------------------Common End-----------------------
+        {
+            "Class": "CommonScene",
+            "Packer": "Bundle",
+            "BasePath": "Assets/ResourcesRaw/Scene/Commons/",
+            "Flags": "DontAdjustLod",
+
+            //NOTE:因为有些Lv1依赖了Lv3，所以会出现Lv3资源进lv1.bundle,并不是配置问题
+            "Target": "Bundles/BattleScene/CommonScene/$(catgory)_lv$(Lod|1)",
+            "Rule": "$(D catgory)/$(DIR)*(\\w+?)(_lv(?<Lod>\\d))?$(EXT)",
+            "Group": "CommonScene$(DlcTag)",
+            "Require": [
+                "ResourcesRedundancy",
+				"CommonScene"
+				
+            ]
+        },
+
+		{
+            "Class": "Monsters",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Monsters/",
+            "Rule": "(?<Lite>\\w+)/(?<Type>\\w+)/(?<Id>\\d+)_(?<Name>\\w+)/$(DIR)*\\w+?(_$(LV)(?<Lod>\\d+))?\\.prefab",
+            "Target": "Bundles/Monster_$(Type)/$(Id)_$(Name)_lv$(Lod|1)",
+            "Group": "Monster_$(Type)",
+            "Require": [
+                "ResourcesRedundancy",
+
+                "Monster_TowerDefence/0080_Slowbro:Monster_TowerDefence/0080_Slowbro_lv1",
+                "Monster_TowerDefence/0122_MrMime:Monster_TowerDefence/0080_Slowbro_lv1"
+            ]
+        },
+        
+        {
+            "Class": "Npc",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/NPC/",
+            "Rule": "(?<Id>\\d+)_(?<Name>\\w+)/",
+            "Target": "Bundles/Npc/$(Id)_$(Name)_lv1",
+            "Group": "Bundles/Npc/$(Id)_$(Name)",
+            "Tag": "Npc",
+			"Flags": "KeepLv1",
+            "DlcId": 0,
+            "SubRules": [
+                {
+                    "Name": "Characters",
+                    "Rule": "\\w+_$(LV)(?<Lod>\\d+)\\.prefab",
+                    "Order": [ "Lod" ],
+                    "DlcId": 0,
+                    "Target": "Bundles/Npc/$(Id)_$(Name)_lv$(Lod|1)"
+                }
+            ]
+        },
+
+      {
+            "Class": "NpcAvater",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/NPC/",
+            "Rule": "(?<Name>\\w+).*male/.*(_lv(?<Lod>\\d))?$(EXT)",
+            "Target": "Bundles/Npc/NpcAvater/$(Name)male_lv$(Lod|1)",      
+            "Group": "NpcAvater",
+            "Tag": "Npc",
+			"Flags": "KeepLv1",
+            "Require": [
+                "Bundles/PlayerBaseInApp",
+
+                "Bundles/PlayerBase",
+                "Npc/NpcAvater/pref_char_lob_40171_city_male:PlayerBase",
+                "Npc/NpcAvater/pref_char_lob_50166_city_female:PlayerBase",
+                "Npc/NpcAvater/pref_char_lob_50182_city_female:PlayerBase",
+                "Npc/NpcAvater/pref_char_lob_500356_city_female:PlayerBase",
+                "Npc/NpcAvater/pref_char_lob_4000011_city_male:PlayerBase",
+                "Npc/NpcAvater/pref_char_lob_40166_city_male:Npc/NpcAvater/pref_char_lob_40166_city_male_lv1",
+                "Npc/NpcAvater/pref_char_lob_50461_city_female:Npc/NpcAvater/pref_char_lob_50461_city_female_lv1",
+                "Npc/NpcAvater/pref_char_lob_50002_city_female:Npc/NpcAvater/pref_char_lob_50002_city_female_lv1",
+                "Npc/NpcAvater/pref_char_lob_66666_city_male:Npc/NpcAvater/pref_char_lob_66666_city_male_lv1",
+                "Npc/NpcAvater/pref_char_lob_666661_city_male:Npc/NpcAvater/pref_char_lob_66666_city_male_lv1"
+
+            ]
+                        
+        },
+      {
+            "Class": "NpcPokemon",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/NPC/",
+            "Rule": "(?<Name>\\w+)/$(DIR)*(\\w+?)(_lv(?<Lod>\\d))?$(EXT)",
+            "Target": "Bundles/Npc/NpcPokemon/$(Name)_lv$(Lod|1)",  
+            "Tag": "Npc",    
+			"Flags": "KeepLv1",
+            "Group": "NpcPokemon"
+                        
+        },
+
+        {
+            "Class": "UI/3DUILite",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/3DUI/",
+            "Rule": "$(DIR)*$(D ParentDir)/$(FNX)",
+            "Target": "Bundles/UI3D/3DUILite"
+        },
+
+        {
+            "Class": "UITextures_HotFix",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/HotFix_rw_truecolor",
+            "Target": "Bundles/UITextures_HotFix",
+            "Group": "UITextures_Mobile"
+        },
+
+        {
+            "Class": "UITextures_Battle_Monsters_Batch",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/Dynamic/Battle/Monsters_Batch_rw_truecolor",
+            "Target": "Bundles/UITextures_Battle_Monsters_Batch",
+            "Flags": "DisableZSTD",
+            "Group": "UITextures_Battle_Pokemons_Monsters"
+        },
+
+        {
+            "Class": "UITextures_Battle_Pokemons_Batch",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/Dynamic/Battle/Pokemons_Batch_rw_truecolor",
+            "Target": "Bundles/UITextures_Battle_Pokemons_Batch",
+            "Flags": "DisableZSTD",
+            "Group": "UITextures_Battle_Pokemons_Monsters"
+        },
+
+        {
+            "Class": "UITextures_Outside_Pokemons_Batch",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/Dynamic/Pokemon_Batch",
+            "Target": "Bundles/UITextures_Outside_Pokemons_Batch",
+            "Group": "UITextures_Outside_Pokemons"
+        },
+
+        {
+            "Class": "UITextures_Battle_Pokemons_Monsters",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/Dynamic/Battle/",
+            "Rule": "(?<Type>Pokemons_rw_truecolor|Monsters_rw_truecolor)/(?<SubType>[a-zA-Z0-9_]+)/",
+            "Target": "Bundles/UITextures_Battle_Pokemons_Monsters/$(Type)/Battle_$(SubType)",
+            "Flags": "DisableZSTD",
+            "Group": "UITextures_Battle_Pokemons_Monsters"
+        },
+
+        {
+            "Class": "UITextures_Battle_Common_Buff_Skill",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/Dynamic/Battle/",
+            "Rule": "(?<Type>Misc_Common_Buff_rw_truecolor|Misc_Common_Skill_rw_truecolor)/",
+            "Target": "Bundles/UITextures_Battle_Common_Buff_Skill",
+            "Flags": "DisableZSTD",
+            "Group": "UITextures_Battle_Common_Buff_Skill"
+        },
+
+        {
+            "Class": "UITextures_Battle_Outside_Items",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/Dynamic/",
+            "SubPaths": [
+                "Mall/Mall_Held_Item_truecolor",
+                "Battle/Mall_Prop_rw_truecolor"
+            ],
+            "Target": "Bundles/UITextures_Battle_Outside_Items",
+            "Flags": "DisableZSTD",
+            "Group": "UITextures_Battle_Outside_Items"
+        },
+
+        {
+            "Class": "UITextures_Outside_Pokemons",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/Dynamic/Pokemon/",
+            "Rule": "(?<Type>[a-zA-Z0-9_]+)/",
+            "Target": "Bundles/UITextures_Outside_Pokemons/Outside_$(Type)",
+            "Group": "UITextures_Outside_Pokemons"
+        },
+
+        {
+            "Class": "UITextures_Mobile",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Mobile/DLC0/",
+            "Rule": "(?<Type>Battle|Common|Dynamic|System)/(?<SubType>[a-zA-Z0-9_]+)/",
+            "Target": "Bundles/UITextures_Mobile/$(Type)/$(SubType)",
+            "Flags": "DisableZSTD",
+            "Group": "UITextures_Mobile",
+            "SubRules": [
+                {
+                    "Rule": "(?<PokemonType>Pokemon_Entry_Card_truecolor|Pokemon_Square)/$(DIR)*?$(FNX)",
+                    "Target": "Bundles/UITextures/$(Type)/$(SubType)/$(PokemonType)"
+                },
+                {
+                    "Rule": "(?<PlayerType>Player_Avatar_Frame_truecolor|Player_Create_truecolor|Player_Emotion|Player_Frame|Player_Gesture|Player_Picture_bg|Player_Splicing_truecolor|Player_Sticker)/$(DIR)*?$(FNX)",
+                    "Target": "Bundles/UITextures/$(Type)/$(SubType)/$(PlayerType)"
+                },
+                {
+                    "Rule": "(?<MallType>Mall_Held_Item_truecolor|Mall_Others_truecolor|Mall_Player_truecolor|Mall_Prop_truecolor|Mall_Recharge_Gem)/$(DIR)*?$(FNX)",
+                    "Target": "Bundles/UITextures/$(Type)/$(SubType)/$(MallType)"
+                },
+                {
+                    "Rule": "(?<BattleType>Mall_Prop_rw_truecolor|Misc_Common_Buff_rw_truecolor|Misc_Common_Skill_rw_truecolor|Monster_Circle_rw_truecolor|Pokemon_Buff_rw_truecolor|Pokemon_Circle_rw_truecolor|Pokemon_Skill_rw_truecolor)/$(DIR)*?$(FNX)",
+                    "Target": "Bundles/UITextures/$(Type)/$(SubType)/$(BattleType)"
+                }
+            ]
+        },
+
+        {
+            "Class": "UITextures_Switch",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UITextures/Switch/DLC0/",
+            "Rule": "(?<Type>Battle|Common|Dynamic|System)/$(DIR)*$(FNX)",
+            "Target": "Bundles/UITextures_Switch/$(Type)",
+            "Group": "UITextures_Switch"
+        },
+
+        // 专门用于处理出现冗余的资源
+        {
+            "Class": "ResourcesRedundancy",
+            "Packer": "Bundle",
+            "BasePath": "Assets/ResourcesRaw/ResourcesRedundancy",
+            "Rule": "ResourcesRedundancy(?<SubName>\\w+)/",
+            "Group": "ResourcesRedundancy",
+            "Flags": "DisableZSTD",
+            "Require": [
+                "UITextures_Mobile"
+            ],
+            "Target": "Bundles/Effect/Common"
+        },
+
+        {
+            "Class": "FxUI_InGame",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Fx/UI_InGame",
+            "Group": "FxUI",
+            "Flags": "DisableZSTD",
+            "Require": [
+                "ResourcesRedundancy",
+                "UITextures_Mobile"
+            ],
+            "Target": "Bundles/FxUI_InGame"
+        },
+
+        {
+            "Class": "FxUI_Lobby",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Fx/UI_Lobby",
+            "Group": "FxUI",
+            "Require": [
+                "ResourcesRedundancy",
+                "UITextures_Mobile"
+            ],
+            "Target": "Bundles/FxUI_Lobby"
+        },
+
+        // 天幕
+        {
+            "Class": "FxUI_TianMu",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Fx/BattleLoading",
+            "Rule": "(?<SubName>\\w+)/",
+            "Group": "FxUI",
+            "Require": [
+                "ResourcesRedundancy",
+                "UITextures_Mobile"
+            ],
+            "Target": "Bundles/FxUI_TianMu_$(SubName)"
+        },
+
+        {
+            "Class": "ArtResFx",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Fx",
+            "Rule": "((?<ParentDir>.+?)/)*\\w+?(_$(LV)(?<Lod>\\d+))?$(EXT)", //取父目录名
+            "Group": "ArtResFx",
+            "Flags": "DisableZSTD",
+            "DlcId": 0,
+            "Require": [
+                "ResourcesRedundancy"
+            ],
+            "Target": "Bundles/Fx/$(ParentDir)_lv$(Lod|1)"
+        },
+
+        {
+            "Class": "CommonHeroAniEffect",
+            "Packer": "Bundle",
+			"Tag": "HeroAniEffect",
+            "BasePath": "Assets/ResourcesRaw/Heroes/",
+            "SubPaths": [
+                "0001_Bulbasaur/00",
+                "0448_Lucario/00",
+                "0068_Machamp/00", //26
+                "0025_Pikachu/00", //28
+                "0445_Garchomp/00", //29
+                "0009_Blastoise/00", //25
+                "0079_Slowpoke/00", //16
+                "0143_Snorlax/00", //73
+                "0006_Charizard/00" //34
+            ],
+            "Rule": "$(DIR)*(Effect/|Ani/)",
+            "Target": "Bundles/HeroAniEffect/$(SubPath)",
+            "Group": "CommonHeroAniEffect",
+            "Flags": "DisableZSTD",
+            "Require": [
+                "ResourcesRedundancy",
+                "ArtResFx"
+            ]
+        },
+
+        {
+            "Class": "PokemonEntryCardLite",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/EntryCards/Lite",
+            "Target": "Bundles/PokemonEntryCard_lite",
+            "Group": "PokemonEntryCard3D"
+        },
+
+        {
+            "Class": "PokemonEntryCard",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/EntryCards/DLC",
+            "Target": "Bundles/PokemonEntryCard_dlc",
+            "Group": "PokemonEntryCard3D",
+            "DlcId": 10000000
+        },
+
+        //大厅资源
+        {
+            "Class": "HeroLobby",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Heroes/",
+            "Rule": "(?<Lite>\\w+)/(?<Id>\\d+)_(?<Name>\\w+)/(?<SkinId>\\d+)/(Prefabs_char/pref_char_lob_|Prefabs_lobby_effects/)",
+            "Target": "Bundles/HeroLobby/$(Id)_$(Name)",
+            "Group": "$(Target)_$(SkinId)",
+            "Tag": "Hero",
+            "Flags": "FirstUpdateDlc0",
+            "Require": [
+                "ResourcesRedundancy",
+                "CommonHeroAniEffect",
+                "ArtResFx",
+
+                "Common/Shaders",
+                "Common/Shaders_raw",
+                "HeroLobby/0068_Machamp_00:HeroLobby/0068_Machamp_00_lv3",
+                "HeroLobby/0068_Machamp_03:HeroLobby/0068_Machamp_03_lv1",
+                "HeroLobby/0080_Slowbro_00:HeroLobby/0080_Slowbro_00_lv3",
+                "HeroLobby/0094_Gengar_00:HeroLobby/0094_Gengar_00_lv2",
+                "HeroLobby/0094_Gengar_00:HeroLobby/0094_Gengar_00_lv3",
+                "HeroLobby/0094_Gengar_09:HeroLobby/0094_Gengar_09_lv2",
+                "HeroLobby/0143_Snorlax_00:HeroLobby/0143_Snorlax_00_lv3",
+                "HeroLobby/0143_Snorlax_05:HeroLobby/0143_Snorlax_05_lv3",
+                "HeroLobby/0143_Snorlax_05:HeroLobby/0143_Snorlax_05_lv2",
+                "HeroLobby/0143_Snorlax_14:HeroLobby/0143_Snorlax_14_lv2",
+                "HeroLobby/0184_Azumarill_00:HeroLobby/0184_Azumarill_00_lv3",
+                "HeroLobby/0184_Azumarill_00:HeroLobby/0184_Azumarill_00_lv2",
+                "HeroLobby/0184_Azumarill_01:HeroLobby/0184_Azumarill_01_lv2",
+                "HeroLobby/0196_Espeon_00:HeroLobby/0196_Espeon_00_lv3",
+                "HeroLobby/0242_Blissey_00:HeroLobby/0242_Blissey_00_lv3",
+                "HeroLobby/0282_Gardevoir_00:HeroLobby/0282_Gardevoir_00_lv3",
+                "HeroLobby/0471_Glaceon_00:HeroLobby/0471_Glaceon_00_lv3",
+                "HeroLobby/0473_Mamoswine_00:HeroLobby/0473_Mamoswine_00_lv2",
+                "HeroLobby/0663_Talonflame_00:HeroLobby/0663_Talonflame_00_lv3",
+                "HeroLobby/0724_Decidueye_00:HeroLobby/0724_Decidueye_00_lv3",
+                "HeroLobby/0763_Tsareena_00:HeroLobby/0763_Tsareena_00_lv3",
+                "HeroLobby/0763_Tsareena_04:HeroLobby/0763_Tsareena_04_lv2",
+                "HeroLobby/0815_Cinderace_00:HeroLobby/0815_Cinderace_00_lv",
+                "HeroLobby/0815_Cinderace_01:HeroLobby/0815_Cinderace_01_lv3",
+                "HeroLobby/0815_Cinderace_01:HeroLobby/0815_Cinderace_01_lv2",
+                "HeroLobby/0815_Cinderace_09:HeroLobby/0815_Cinderace_09_lv2",
+                "HeroLobby/0830_Eldegoss_00:HeroLobby/0830_Eldegoss_00_lv2",
+                "HeroLobby/0003_Venusaur_00:HeroLobby/0003_Venusaur_00_lv3",
+                "HeroLobby/0003_Venusaur_00:HeroLobby/0003_Venusaur_00_lv2",
+                "HeroLobby/0003_Venusaur_03:HeroLobby/0003_Venusaur_03_lv2",
+                "HeroLobby/0006_Charizard_00:HeroAniEffect/0006_Charizard/00",
+                "HeroLobby/0006_Charizard_00:HeroLobby/0006_Charizard_00_lv3",
+                "HeroLobby/0006_Charizard_00:HeroLobby/0006_Charizard_00_lv2",
+                "HeroLobby/0009_Blastoise_00:HeroLobby/0009_Blastoise_00_lv2",
+                "HeroLobby/0009_Blastoise_00:HeroLobby/0009_Blastoise_00_lv3",
+                "HeroLobby/0009_Blastoise_06:HeroLobby/0009_Blastoise_06_lv1",
+                "HeroLobby/0025_Pikachu_00:HeroLobby/0025_Pikachu_00_lv3",
+                "HeroLobby/0025_Pikachu_01:HeroLobby/0025_Pikachu_01_lv3",
+                "HeroLobby/0025_Pikachu_01:HeroLobby/0025_Pikachu_01_lv2",
+                "HeroLobby/0025_Pikachu_09:HeroLobby/0025_Pikachu_09_lv2",
+                "HeroLobby/0040_Wigglytuff_00:HeroLobby/0040_Wigglytuff_00_lv2",
+                "HeroLobby/0068_Machamp_00:HeroAniEffect/0068_Machamp/00",
+                "HeroLobby/0003_Venusaur_03:HeroLobby/0003_Venusaur_00_lv3",
+                "HeroLobby/0003_Venusaur_03:HeroLobby/0003_Venusaur_00_lv2",
+                "HeroLobby/0006_Charizard_10:HeroAniEffect/0006_Charizard/00",
+                "HeroLobby/0006_Charizard_07:HeroLobby/0006_Charizard_00_lv3",
+                "HeroLobby/0006_Charizard_07:HeroLobby/0006_Charizard_00_lv2",
+                "HeroLobby/0009_Blastoise_06:HeroLobby/0009_Blastoise_00_lv3",
+                "HeroLobby/0009_Blastoise_05:HeroLobby/0009_Blastoise_00_lv2",
+                "HeroLobby/0025_Pikachu_01_lv2:HeroLobby/0025_Pikachu_00_lv3",
+                "HeroLobby/0025_Pikachu_03:HeroLobby/0025_Pikachu_00_lv3",
+                "HeroLobby/0724_Decidueye_02:HeroLobby/0724_Decidueye_00_lv2",	
+                "HeroLobby/0724_Decidueye_05:HeroLobby/0724_Decidueye_00_lv2",	
+                "HeroLobby/0763_Tsareena_00:HeroLobby/0763_Tsareena_00_lv2",	
+                "HeroLobby/0763_Tsareena_02:HeroLobby/0763_Tsareena_00_lv2",	
+                "HeroLobby/0763_Tsareena_03:HeroLobby/0763_Tsareena_00_lv2",	
+                "HeroLobby/0763_Tsareena_04:HeroLobby/0763_Tsareena_00_lv2",	
+                "HeroLobby/0763_Tsareena_05:HeroLobby/0763_Tsareena_00_lv2",
+                "HeroLobby/0068_Machamp_03:HeroLobby/0068_Machamp_00_lv3",
+                "HeroLobby/0094_Gengar_08:HeroLobby/0094_Gengar_00_lv2",
+                "HeroLobby/0094_Gengar_08:HeroLobby/0094_Gengar_00_lv3",
+                "HeroLobby/0143_Snorlax_04:HeroLobby/0143_Snorlax_00_lv3",
+                "HeroLobby/0184_Azumarill_04:HeroLobby/0184_Azumarill_00_lv3",
+                "HeroLobby/0184_Azumarill_04:HeroLobby/0184_Azumarill_00_lv2",
+                "HeroLobby/0196_Espeon_06:HeroLobby/0196_Espeon_00_lv3",
+                "HeroLobby/0242_Blissey_03:HeroLobby/0242_Blissey_00_lv3",
+                "HeroLobby/0282_Gardevoir_11:HeroLobby/0282_Gardevoir_00_lv3",
+                "HeroLobby/0655_Delphox_00:HeroLobby/0655_Delphox_00_lv2",
+                "HeroLobby/0663_Talonflame_10:HeroLobby/0663_Talonflame_00_lv3",
+                "HeroLobby/0724_Decidueye_05:HeroLobby/0724_Decidueye_00_lv3",
+                "HeroLobby/0763_Tsareena_03:HeroLobby/0763_Tsareena_00_lv3",
+                "HeroLobby/0815_Cinderace_05:HeroLobby/0815_Cinderace_00_lv3",
+                "HeroLobby/0068_Machamp_06:HeroLobby/0068_Machamp_00_lv3",
+                "HeroLobby/0094_Gengar_09:HeroLobby/0094_Gengar_00_lv2",
+                "HeroLobby/0094_Gengar_09:HeroLobby/0094_Gengar_00_lv3",
+                "HeroLobby/0143_Snorlax_05:HeroLobby/0143_Snorlax_00_lv3",
+                "HeroLobby/0196_Espeon_08:HeroLobby/0196_Espeon_00_lv3",
+                "HeroLobby/0242_Blissey_05:HeroLobby/0242_Blissey_00_lv3",
+                "HeroLobby/0706_Goodra_00:HeroLobby/0706_Goodra_00_lv2",
+                "HeroLobby/0663_Talonflame_11:HeroLobby/0663_Talonflame_00_lv3",
+                "HeroLobby/0763_Tsareena_04:HeroLobby/0763_Tsareena_00_lv3",
+                "HeroLobby/0815_Cinderace_06:HeroLobby/0815_Cinderace_00_lv3",
+                "HeroLobby/0143_Snorlax_14:HeroLobby/0143_Snorlax_00_lv3",
+                "HeroLobby/0724_Decidueye_00:HeroLobby/0724_Decidueye_00_lv2",
+                "HeroLobby/0763_Tsareena_05:HeroLobby/0763_Tsareena_00_lv3",
+                "HeroLobby/0815_Cinderace_09:HeroLobby/0815_Cinderace_00_lv3",
+                "HeroLobby/0003_Venusaur_02:HeroLobby/0003_Venusaur_00_lv3",
+                "HeroLobby/0003_Venusaur_02:HeroLobby/0003_Venusaur_00_lv2",
+                "HeroLobby/0003_Venusaur_03:HeroLobby/0003_Venusaur_03_lv2",
+                "HeroLobby/0006_Charizard_08:HeroAniEffect/0006_Charizard/00",
+                "HeroLobby/0006_Charizard_06:HeroLobby/0006_Charizard_00_lv3",
+                "HeroLobby/0006_Charizard_06:HeroLobby/0006_Charizard_00_lv2",
+                "HeroLobby/0009_Blastoise_05:HeroLobby/0009_Blastoise_00_lv3",
+                "HeroLobby/0009_Blastoise_02:HeroLobby/0009_Blastoise_00_lv2",
+                "HeroLobby/0009_Blastoise_02:HeroLobby/0009_Blastoise_00_lv3",
+                "HeroLobby/0025_Pikachu_01:HeroLobby/0025_Pikachu_00_lv3",
+                "HeroLobby/0473_Mamoswine_00:HeroLobby/0473_Mamoswine_00_lv2",
+                "HeroLobby/0068_Machamp_02:HeroLobby/0068_Machamp_00_lv3",
+                "HeroLobby/0080_Slowbro_10:HeroLobby/0080_Slowbro_00_lv3",
+                "HeroLobby/0094_Gengar_03:HeroLobby/0094_Gengar_00_lv2",
+                "HeroLobby/0094_Gengar_03:HeroLobby/0094_Gengar_00_lv3",
+                "HeroLobby/0143_Snorlax_02:HeroLobby/0143_Snorlax_00_lv3",
+                "HeroLobby/0184_Azumarill_01:HeroLobby/0184_Azumarill_00_lv3",
+                "HeroLobby/0184_Azumarill_01:HeroLobby/0184_Azumarill_00_lv2",
+                "HeroLobby/0196_Espeon_05:HeroLobby/0196_Espeon_00_lv3",
+                "HeroLobby/0242_Blissey_01:HeroLobby/0242_Blissey_00_lv3",
+                "HeroLobby/0282_Gardevoir_04:HeroLobby/0282_Gardevoir_00_lv3",
+                "HeroLobby/0471_Glaceon_07:HeroLobby/0471_Glaceon_00_lv3",
+                "HeroLobby/0571_Zoroark_00:HeroLobby/0571_Zoroark_00_lv2",
+                "HeroLobby/0663_Talonflame_02:HeroLobby/0663_Talonflame_00_lv3",
+                "HeroLobby/0724_Decidueye_02:HeroLobby/0724_Decidueye_00_lv3",
+                "HeroLobby/0763_Tsareena_02:HeroLobby/0763_Tsareena_00_lv3",
+                "HeroLobby/0815_Cinderace_01:HeroLobby/0815_Cinderace_00_lv3"
+            ],
+
+            "SubRules": [
+                {
+                    "Name": "Character",
+                    "Rule": "\\w+?(_$(LV)(?<Lod>\\d+))?\\.prefab",
+                    "Target": "$(DefaultTarget)_$(SkinId)_lv$(Lod|2)"
+                }
+            ]
+        },
+
+        {
+            //对导出资源进行分组，排序，每个GroupName下的资源，作为一个独立的打包单元，实现依赖打包
+            "Class": "HeroBattle",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Heroes/",
+            "Rule": "(?<Lite>\\w+)/(?<Id>\\d+)_(?<Name>\\w+)/(?<SkinId>\\d+)/$(DIR)*\\w+?(_$(LV)(?<Lod>\\d+))?\\.prefab",
+            "Target": "Bundles/HeroBattle/$(Id)_$(Name)_$(SkinId)_lv$(Lod|1)",
+            "Group": "$(Id)_$(Name)_$(SkinId)",
+            "Tag": "Hero",
+            "Flags": "DisableZSTD,KeepLv1,KeepLv3,FirstUpdateDlc0",
+            "Require": [
+                "ResourcesRedundancy",
+                "CommonHeroAniEffect",
+                "ArtResFx",
+
+                "Common/Shaders",
+                "Common/Shaders_raw"
+            ]
+        },
+
+        //----------------------AvatarScene-----------------------------
+
+        {
+            "Class": "AvatarScene",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Scenes/AvatarScenes",
+            "Rule": "(?<Lite>\\w+)/(?<Name>\\w+)/(?<SkinId>[0-9]*)_(?<SkinName>[A-Za-z]*)/(?<Style>\\w+?)(_$(LV)(?<Lod>\\d+))?$(EXT)",
+            "Group": "Bundles/AvatarScene/$(Name)_$(SkinId)",
+            "Flags": "FirstUpdateDlc0",
+            "Require": [
+                // "Bundles/HeroLobby/$(Name)_$(SkinId)"
+                "ResourcesRedundancy",
+
+                "Common/Shaders",
+                "Common/Shaders_raw"
+            ],
+            "Target": "Bundles/AvatarScene/$(Name)_$(SkinId)_lv$(Lod|1)"
+        },
+
+        //----------------------SceneBattle-----------------------------
+
+        {
+            //这部分在被引用时，才会进包
+
+            "Class": "BattleScene/Art",
+            "Packer": "Bundle",
+            "Require": [
+                "CommonScene$(DlcTag)",
+                "ResourcesRedundancy",
+            ],
+            "BasePath": "Assets/ResourcesRaw/Scene/",
+            //排除Common,Lobby,Char_test目录，路径里带Prefab的是这里需要关注的
+            //Beach目录只有少量资源，实际属于Beach_Tech,这里我们把它干掉走自动依赖
+
+            "Rule": "(?!Common|Lobby|Beach/|Char_test_\\w+)$(D Theme)/",
+
+            "Group": "BattleScene/Art/$(Theme)$(DlcTag)",
+            "Target": "Bundles/BattleScene/$(Theme)",
+            "SubRules": [
+                //！！！！注意不要弄丢Lod字段，影响分包！！！！！
+
+                // Beach_Tech
+                {
+                    "Rule": "$(D SubDir)/(?<SubName>\\w+)_(?<SubType>Model|Texture|Material)/$(DIR)*\\w+?(_lv(?<Lod>\\d+))?$(EXT)",
+                    "Target": "$(Target)_lv$(Lod|0)/$(SubName)_$(SubType)_lv$(Lod|0)",
+                    "Flags": "Tweakable"
+                },
+
+                {
+                    "Rule": "$(DIR)*(?<SubType>\\w+)_lv(?<Lod>\\d+)/$(DIR)*$(FNX)",
+                    "Target": "$(Target)_lv$(Lod|0)/$(SubType)_lv$(Lod|0)",
+                    "Flags": "Tweakable"
+                },
+                {
+                    "Rule": "$(D SubDir)/(?<SubType>[a-zA-Z0-9_]+)/$(DIR)*\\w+?(_lv(?<Lod>\\d+))?$(EXT)",
+                    "Target": "$(Target)_lv$(Lod|0)/$(SubDir)_$(SubType)_lv$(Lod|0)",
+                    "Flags": "Tweakable"
+                },
+
+                {
+                    //Fallback(目录名带Lod）
+                    "Rule": "$(DIR)*\\w+_lv(?<Lod>\\d+)/$(DIR)*$(FNX)",
+                    "Target": "$(Target)_lv$(Lod|0)/unarray_lv$(Lod|0)",
+                    "Flags": "Tweakable"
+                },
+                {
+                    //Fallback（文件名或带Lod）
+                    "Rule": "$(D SubDir)/$(DIR)*\\w+?(_lv(?<Lod>\\d+))?$(EXT)",
+                    "Target": "$(Target)_lv$(Lod|0)/$(SubDir)_unarray_lv$(Lod|0)",
+                    "Flags": "Tweakable"
+                }
+            ]
+        },
+
+        {
+            //注意有代码关联，请勿修改符号变量
+            "Class": "BattleScene",
+            "Packer": "Bundle",
+            "Require": [
+                "CommonScene$(DlcTag)",
+                "ResourcesRedundancy",
+                "Common/Shaders",
+                "Common/Shaders_raw",
+
+                "BattleScene/TutorialMode:BattleScene/Art/Beach_Tech",
+                "BattleScene/TutorialMode_dlc:BattleScene/Art/Beach_Tech_dlc",
+                "BattleScene/TutorialModeHD:BattleScene/Art/Beach_Tech_dlc",
+
+                "BattleScene/BigMode_RemoatStadium:BattleScene/Art/Beach_Tech",
+                "BattleScene/BigMode_RemoatStadium_dlc:BattleScene/Art/Beach_Tech_dlc",
+                "BattleScene/BigMode_Func_RemoatStadium:BattleScene/Art/Beach_Tech",
+
+                "BattleScene/BigMode_RemoatStadium_Mainland:BattleScene/Art/Beach_Tech",
+                "BattleScene/BigMode_RemoatStadium_Mainland_dlc:BattleScene/Art/Beach_Tech_dlc",
+                "BattleScene/BigMode_Func_RemoatStadium_Mainland:BattleScene/Art/Beach_Tech",
+
+                "BattleScene/BigMode_SkyCastleMode:BattleScene/Art/City_Sky",
+                "BattleScene/BigMode_SkyCastleMode_dlc:BattleScene/Art/City_Sky_dlc",
+                "BattleScene/BigMode_Func_SkyCastle:BattleScene/Art/City_Sky",
+
+                "BattleScene/SmallMode_MerStadium:BattleScene/Art/Beach_Tech",
+                "BattleScene/SmallMode_MerStadium_dlc:BattleScene/Art/Beach_Tech_dlc",
+                "BattleScene/SmallMode_Func_MerStadium:BattleScene/Art/Beach_Tech",
+
+                "BattleScene/SmallMode_MerStadium_Halloween:BattleScene/Art/Beach_Tech",
+                "BattleScene/SmallMode_MerStadium_Halloween_dlc:BattleScene/Art/Beach_Tech_dlc",
+                "BattleScene/SmallMode_Func_MerStadium_Halloween:BattleScene/Art/Beach_Tech",
+
+				"BattleScene/SmallMode_MerStadium_Catchmode:BattleScene/Art/Beach_Tech",
+                "BattleScene/SmallMode_MerStadium_Catchmode_dlc:BattleScene/Art/Beach_Tech_dlc",
+
+				"BattleScene/SmallMode_Clonemode:BattleScene/Art/Beach_Tech",
+                "BattleScene/SmallMode_Clonemode_dlc:BattleScene/Art/Beach_Tech_dlc",
+
+				"BattleScene/SmallMode_VolleyballMode:BattleScene/Art/Beach_Tech",
+                "BattleScene/SmallMode_VolleyballMode_dlc:BattleScene/Art/Beach_Tech_dlc",
+
+                "BattleScene/SmallMode_AuromaPark:BattleScene/Art/Garden",
+                "BattleScene/SmallMode_AuromaPark_dlc:BattleScene/Art/Garden_dlc",
+                "BattleScene/SmallMode_Func_AuromaPark:BattleScene/Art/Garden",
+
+                "BattleScene/SmallMode_AuromaPark_Bossrush:BattleScene/Art/Garden",
+                "BattleScene/SmallMode_AuromaPark_Bossrush_dlc:BattleScene/Art/Garden_dlc",
+                "BattleScene/SmallMode_Func_BossRush:BattleScene/Art/Garden",
+
+                "BattleScene/SmallMode_ShiverCity:BattleScene/Art/City",
+                "BattleScene/SmallMode_ShiverCity_dlc:BattleScene/Art/City_dlc",
+                "BattleScene/SmallMode_Func_ShiverCity:BattleScene/Art/City",
+                "BattleScene/SmallMode_Func_ShiverCity_SnowFestival:BattleScene/Art/City",
+
+                "BattleScene/SmallMode_CityPVE:BattleScene/Art/CityPVE",
+                "BattleScene/SmallMode_CityPVE_dlc:BattleScene/Art/CityPVE_dlc",
+
+                "BattleScene/BigMode_RemoatStadium_cn:BattleScene/BigMode_RemoatStadium_cn_lv2",
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:BattleScene/Beach_Tech_lv2/5v5_cn_Material_lv2",
+                "BattleScene/BigMode_RemoatStadium_cn:BattleScene/BigMode_RemoatStadium_cn_lv3",
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:BattleScene/Beach_Tech_lv3/5v5_cn_Material_lv3",
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:BattleScene/Beach_Tech_lv3/Beach_tech_5v5_rank_Material_lv3",
+                "BattleScene/BigMode_RemoatStadium_cn:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/TutorialModeHD:BattleScene/TutorialModeHD_lv3",
+                "BattleScene/TutorialMode:BattleScene/Beach_Tech_lv3/Material_unarray_lv3",
+                "BattleScene/BigMode_FunctionalObject_Volleyball:BattleScene/BigMode_FunctionalObject_Volleyball_lv1",
+                "BattleScene/TutorialModeHD:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/SmallMode_EJungle_GemRush_01:BattleScene/SmallMode_EJungle_GemRush_01_lv0",
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:BattleScene/Beach_Tech_lv3/Model_Plant_lv3",
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:BattleScene/Beach_Tech_lv3/Material_unarray_lv3",
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:BattleScene/Beach_Tech_lv2/Material_unarray_lv2",
+                "BattleScene/SmallMode_ECity_asymmetric_02:Scene/Redundancy/City",
+                "BattleScene/CommonScene/Function:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/SmallMode_EJunglefall_PacMon01_01:BattleScene/SmallMode_EJunglefall_PacMon01_01_lv0",
+                "BattleScene/SmallMode_ECity_kickbomb_01:Scene/Redundancy/City",           								
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:BattleScene/CommonScene/Function_lv3",	
+                "BattleScene/BigMode_FunctionalObject_FlameWheel:BattleScene/CommonScene/Function_lv2",
+                "BattleScene/BigMode_FunctionalObject_Common:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_CTF:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_HookGem:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_HookTrap:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_KB:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_RemoatStadium:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_TowerDefence:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:BattleScene/CommonScene/Prop_lv1",
+                "BattleScene/SmallMode_ShiverCity:Scene/Redundancy/City",
+                "BattleScene/BigMode_FunctionalObject_HookGem:BattleScene/CommonScene/Function_lv2",
+                "BattleScene/BigMode_FunctionalObject_GemRush:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_Diglett:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_FlameWheel:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/BigMode_FunctionalObject_HookTrap:BattleScene/CommonScene/Function_lv2",
+                "BattleScene/CommonScene/Function:BattleScene/CommonScene/Function_lv2",
+                "BattleScene/SmallMode_ECityday_CaptureTheFlag:Scene/Redundancy/City",
+                "BattleScene/BigMode_FunctionalObject_GemRush:BattleScene/CommonScene/Function_lv2",
+                "BattleScene/BigMode_FunctionalObject_BattleRoyale:BattleScene/CommonScene/Function_lv3",
+                "BattleScene/TutorialMode:Common/Shaders_raw",
+                "BattleScene/Beach_Tech_lv0/Beach_Tech_lv0_combo:Common/Shaders_raw",
+                "BattleScene/BigMode_FunctionalObject_CTF:BattleScene/CommonScene/Function_lv2",
+                "BattleScene/CommonScene/Function:BattleScene/CommonScene/Prop_lv1",
+                "BattleScene/CommonScene/Prop:BattleScene/CommonScene/Prop_lv3",
+                "BattleScene/CommonScene/Prop:BattleScene/CommonScene/Prop_lv1",
+                "BattleScene/BigMode_FunctionalObject_Beans:BattleScene/BigMode_FunctionalObject_Beans_lv3",
+                "BattleScene/SmallMode_EGarden_PointRaceDiglett_01:BattleScene/SmallMode_EGarden_PointRaceDiglett_01_lv0"
+
+            ],
+
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Scenes/BattleScenes",
+            "SubRules": [
+                {
+                    "Rule": "(?<Mode>TutorialMode)/$(DIR)*(?<Style>\\w+?)_lv(?<Lod>3)$(EXT)",
+                    "Target": "Bundles/BattleScene/$(Mode)HD_lv$(Lod|3)",
+                    "Group": "BattleScene/$(Mode)HD"
+                },
+                {
+                    "Rule": "(?<Mode>BigMode|SmallMode)(?<Functional>_FunctionalObject)/(?<Name>\\w+)/($(DIR)*)(?<Style>\\w+?)(_$(LV)(?<Lod>\\d+))?$(EXT)",
+                    "Target": "Bundles/BattleScene/$(Mode)_FunctionalObject_$(Name)_lv$(Lod|0)",
+                    "Group": "BattleScene/$(Mode)_Func_$(Name)", //这部分其实没什么资源需要共享，按正常Lod序列打包
+                    "Flags": "DisableZSTD"
+                },
+                {
+                    "Rule": "(?<Mode>BigMode|SmallMode)_(?<Name>\\w+)/($(DIR)*)(?<Style>\\w+?)(_$(LV)(?<Lod>\\d+))?$(EXT)",
+                    "Target": "Bundles/BattleScene/$(Mode)_$(Name)_lv$(Lod|0)",
+                    "Group": "BattleScene/$(Mode)_$(Name)$(DlcTag)"
+                },
+                {
+                    "Rule": "(?<Mode>TutorialMode)/$(DIR)*(?<Style>\\w+?)(_$(LV)(?<Lod>\\d+))?$(EXT)",
+                    "Target": "Bundles/BattleScene/$(Mode)_lv$(Lod|0)",
+                    "Group": "BattleScene/$(Mode)$(DlcTag)"
+                }
+            ]
+        },
+
+        {
+            //注意有代码关联，请勿修改符号变量
+            "Require": [
+                "ResourcesRedundancy",
+                "CommonScene$(DlcTag)"
+            ],
+            "Class": "SceneBattleTest",
+            "Packer": "Bundle",
+            "Flags": "WorkInProgress",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Scenes/",
+            "Rule": "(?<SceneType>TestScenes)/(?<Name>\\w+)/($(DIR)*)(?<Style>\\w+?)(_$(LV)(?<Lod>\\d+))?$(EXT)",
+            "Target": "Bundles/$(SceneType)/$(Name)_lv$(Lod|0)",
+            "Group": "BattleScene/$(Name)"
+        },
+        //----------------------SceneBattle-----------------------------
+          {
+            "Class": "SysScene/Art", 
+            "Packer": "Bundle",
+			"BasePath": "Assets/ResourcesRaw/Scene/Lobby/lobby_Newcity01",
+            "Rule": "(?<SubType>Map|Model)/$(DIR)*\\w+?(_lv(?<Lod>\\d+))?$(EXT)",
+            "Group": "SysScene/Art",
+            "Target": "Bundles/SysScene/MainCityScene/Art/lobby_$(SubType)_lv$(Lod|1)",
+		    "Tag": "MainCity",
+            "Flags": "DisableZSTD",
+        },
+ {
+            "Class": "SysScene/TextureArt", 
+            "Packer": "Bundle",
+			"BasePath": "Assets/ResourcesRaw/Scene/Lobby/lobby_Newcity01/Texture",
+            "Group": "SysScene/Art",
+            "Target": "Bundles/SysScene/MainCityScene/Art/Texture",
+			"Tag": "MainCity",
+			"Flags": "DisableZSTD",
+			 "SubRules": [
+                {
+                    "Rule": ".*(?<SubType>shop|tower|vend).*(_$(LV)(?<Lod>\\d+))?$(EXT)",
+                    "Target": "$(DefaultTarget)/PartOne_lv$(Lod|0)"
+                },
+				  {
+                    "Rule": ".*(?<SubType>object|ground|plantumbrella|merge|road).*(_$(LV)(?<Lod>\\d+))?$(EXT)",
+                    "Target": "$(DefaultTarget)/PartTwo_lv$(Lod|0)"
+                },
+				 {
+                    "Rule": ".*newcity.*(_$(LV)(?<Lod>\\d+))?$(EXT)",
+                    "Target":  "$(DefaultTarget)/PartThree_lv$(Lod|0)",
+                },
+			
+				 ],
+				
+        },
+
+		{
+	        "Class": "SysScene/MainCity",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Scenes/SystemScenes/lobby_MainCity",
+			"Rule": "$(DIR)*(?!.*guide)\\w+?(_lv(?<Lod>\\d+))?$(EXT)",
+		    "Target": "Bundles/SysScene/MainCityScene/lobby_MainCity_lv$(Lod|1)",
+            "Group": "Bundles/SysScene/lobby_MainCity",
+			"Tag": "MainCity",
+			"Flags": "DisableZSTD,KeepLv3",
+			"Require": [
+                "SysScene/Art",
+				 "ResourcesRedundancy"
+            ],
+        },
+		
+		    {
+            "Class": "SysScene/MainCityGuide",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Scenes/SystemScenes/lobby_MainCity",
+            "Target": "Bundles/SysScene/MainCityScene/lobby_MainCityGuide_lv$(Lod|1)",
+            "Rule": ".*guide.*(?<Style>\\w+?)(_$(LV)(?<Lod>\\d+))?$(EXT)",
+            "Group": "Bundles/SysScene/lobby_MainCityGuide",
+            "Tag": "MainCity",
+            "Flags": "DisableZSTD",
+            "Require": [
+                 "Bundles/SysScene/lobby_MainCity"
+            ]
+        },
+        {
+            "Class": "SysScene",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Scenes/SystemScenes",
+            "Rule": "(?<Name>\\w+)/$(DIR)*",
+            "Target": "Bundles/SysScene/$(Name)",
+            "Group": "Bundles/SysScene/$(Name)",
+            "SubRules": [
+                {
+                    "Name": "LodPacks",
+                    "Rule": "(?<Style>\\w+)_$(LV)(?<Lod>\\d+)$(EXT)",
+                    "Target": "$(DefaultTarget)_lv$(Lod)"
+                },
+                {
+                    "Name": "NoLodPacks",
+                    "Rule": "(?<Style>.+)$(EXT)",
+                    "Target": "$(DefaultTarget)_lv1"
+                }
+            ],
+            "Require": [
+			    "ResourcesRedundancy"
+            ]
+        },
+
+        //-------------Player----------------    
+        {
+            "Class": "PlayerBase",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Player/Lite/",
+            "Group": "Bundles/PlayerBaseInApp",
+            "Target": "Bundles/PlayerBase",
+			"Tag": "Player",
+            "SubRules": [
+                {
+                    "Rule": "(?<Sex>female|male)/(?<Part>\\w+)/pref_lob_(?<SuitId>\\d+)\\w+_lv(?<Lod>\\d).prefab",
+                    "Target": "Bundles/PlayerPart/$(Sex)_$(SuitId)_lite"
+                },
+				{
+                    "Rule": "$(DIR)*Prefabs_char/pref_char_lob_(?<SuitId>\\d+)_(male|female).prefab",
+                    "Target": "Bundles/PlayerBase_Prefabs"
+                },
+                {
+                    "Rule": "$(DIR)*$(FNX)",
+                    "Target": "Bundles/PlayerBase"
+                }
+            ]
+        },
+
+        {
+            "Class": "MainCityPlayerPart",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Player/main_city/",
+            "Rule": "(?<Sex>female|male)/(?<Part>\\w+)/pref_lob_(?<SuitId>\\d+)\\w+.prefab",
+            "Group": "Bundles/PlayerBaseInApp",
+            "Target": "Bundles/MainCityPlayerPart/$(Sex)_$(SuitId)"
+        },
+
+        {
+            "Class": "PlayerPart",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Player/",
+            "Rule": "(?<Lite>\\w+)/(?<Sex>female|male)/(?<Part>\\w+)/pref_lob_(?<SuitId>\\d+)\\w+_lv(?<Lod>\\d).prefab",
+			"Flags": "KeepLv0,KeepLv3,FirstUpdateDlc0",
+            "Require": [
+                "Bundles/PlayerBaseInApp",
+
+                "Bundles/PlayerBase",
+                "PlayerBase",
+                "Common/Shaders",
+                "Common/Shaders_raw",
+                "PlayerPart/female_50001_lite:PlayerPart/female_50000_lite",
+                "PlayerPart/female_50310:PlayerPart/female_50310_lv0",
+                "PlayerPart/female_50370:PlayerPart/female_50370_lv0",
+                "PlayerPart/female_50548:PlayerPart/female_50548_lv0",
+                "PlayerPart/female_50572:PlayerPart/female_50572_lv0",
+                "PlayerPart/female_50689:PlayerPart/female_50689_lv0",
+                "PlayerPart/male_40001_lite:PlayerPart/male_40000_lite",
+                "PlayerPart/male_40370:PlayerPart/male_40370_lv0",
+                "PlayerPart/male_40496:PlayerPart/male_40496_lv0",
+                "PlayerPart/male_40548:PlayerPart/male_40548_lv0",
+                "PlayerPart/male_40572:PlayerPart/male_40572_lv0",
+                "PlayerPart/male_40689:PlayerPart/male_40689_lv0",
+                "PlayerPart/female_50002_lite:PlayerPart/female_50000_lite",
+                "PlayerPart/female_50583:PlayerPart/female_50583_lv0",
+                "PlayerPart/female_50659:PlayerPart/female_50659_lv0",
+                "PlayerPart/female_50549:PlayerPart/female_50549_lv0",
+                "PlayerPart/female_50573:PlayerPart/female_50573_lv0",
+                "PlayerPart/female_50690:PlayerPart/female_50690_lv0",
+                "PlayerPart/male_40002_lite:PlayerPart/male_40000_lite",
+                "PlayerPart/male_40659:PlayerPart/male_40659_lv0",
+                "PlayerPart/male_40535:PlayerPart/male_40535_lv0",
+                "PlayerPart/male_40549:PlayerPart/male_40549_lv0",
+                "PlayerPart/male_40573:PlayerPart/male_40573_lv0",
+                "PlayerPart/male_40690:PlayerPart/male_40690_lv0",
+                "PlayerPart/female_50644:PlayerBase",
+                "PlayerPart/female_50011_lite:PlayerPart/female_50000_lite",
+                "PlayerPart/female_50166_lite:PlayerPart/female_50000_lite",
+                "PlayerPart/female_50003_lite:PlayerPart/female_50000_lite",
+                "PlayerPart/female_50584:PlayerPart/female_50584_lv0",
+                "PlayerPart/female_50660:PlayerPart/female_50660_lv0",
+                "PlayerPart/female_50550:PlayerPart/female_50550_lv0",
+                "PlayerPart/female_50574:PlayerPart/female_50574_lv0",
+                "PlayerPart/female_50691:PlayerPart/female_50691_lv0",
+                "PlayerPart/male_40011_lite:PlayerPart/male_40000_lite",
+                "PlayerPart/male_40166_lite:PlayerPart/male_40000_lite",
+                "PlayerPart/male_40003_lite:PlayerPart/male_40000_lite",
+                "PlayerPart/male_40660:PlayerPart/male_40660_lv0",
+                "PlayerPart/male_40550:PlayerPart/male_40550_lv0",
+                "PlayerPart/male_40574:PlayerPart/male_40574_lv0",
+                "PlayerPart/male_40691:PlayerPart/male_40691_lv0"
+            ],
+            "Group": "Bundles/PlayerPart_$(Sex)_$(SuitId)",
+            "Target": "Bundles/PlayerPart/$(Sex)_$(SuitId)_lv$(Lod)"
+        },
+        //-------------Player----------------
+
+
+        //------------------------------------------UI Begin ------------------------------------
+        {
+            "Class": "UI/CommonPrefab",
+            "Packer": "Bundle",
+            "SubPaths": [
+                "Assets/OuterResources/ABResources/UI/OutSide/Common",
+                "Assets/ResourcesRaw/UI/Base"
+            ],
+            "Group": "UI/CommonPrefab",
+            "Target": "Bundles/UIPrefab/CommonPrefab",
+            "Flags": "DisableZSTD",
+            "Require": [
+                "ResourcesRedundancy",
+                "FxUI",
+				"UITextures_Mobile",
+                "UITextures_Switch"
+            ]
+        },
+
+        {
+            "Class": "UI/VersionUpdatePrefab",
+            "Packer": "Bundle",
+	        "BasePath": "Assets/OuterResources/ABResources/UI/OutSide/VersionUpdate",
+            "Rule": "$(FN).prefab",
+            "Target": "Bundles/UIPrefab/VersionUpdatePrefab",
+            "Flags": "Standalone,DisableZSTD"
+        },
+
+        {
+            "Class": "UI/DlcPrefab",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UI",
+            "Rule": "$(DIR)*(?<ParentDir>(Shop|Settings|HeldItem|Activity|Energy|Association|AvatarTest|BattlePass|Beauty|RoleEquip|Growth|OutSideBag|Ranking|Test|Debris|Mail|TrainerProps|Talent|HeroSelectionStandalone|MatchRoomUsedBefore))/$(FN).prefab",
+            "DlcId": 0,
+            "Group": "Bundles/DlcPrefab",
+            "Target": "Bundles/UIPrefab/$(ParentDir)",
+            "Flags": "DisableZSTD",
+            "Require": [
+                "ResourcesRedundancy",
+                "FxUI",
+                "UI/CommonPrefab",
+				"UITextures_Mobile",
+                "UITextures_Switch"
+            ]
+            
+        },
+
+        {
+            "Class": "UI/BattlePrefab",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UI/Battle",
+            "Group": "Bundles/UIPrefab",
+            "Target": "Bundles/UIBattlePrefab",
+            "Flags": "DisableZSTD",
+            "Require": [
+                "ResourcesRedundancy",
+                "FxUI",
+                "UI/CommonPrefab",
+				"UITextures_Mobile",
+                "UITextures_Switch"
+            ],
+            "SubRules": [
+                {
+                    "Rule": "$(DIR)*(Switch|EmojiSwitchKeyBattle)/$(FNX)",
+                    "Target": "$(Target)/BattleSwitch"
+                },
+                {
+                    "Rule": "Common/(BattleNotify|FloatWord|SignalCommunicate)/$(FNX)",
+                    "Target": "$(Target)/BattleSignalNotifyFloatWord"
+                },
+                {
+                    "Rule": "Common/(LoadingDynamic|MiniMap|BattleLoading)/$(FNX)",
+                    "Target": "$(Target)/BattleLoading"
+                },
+                {
+                    "Rule": "Common/(MiniMapIcon|MiniMapIconMonster)/$(FNX)",
+                    "Target": "$(Target)/BattleMiniMap"
+                },
+                {
+                    "Rule": "Common/Tutorial/$(DIR)*$(FNX)",
+                    "Target": "$(Target)/BattleTutorial"
+                },
+                {
+                    "Rule": "Common/Hud/$(DIR)*$(FNX)",
+                    "Target": "$(Target)/BattleHud"
+                },
+                {
+                    "Rule": "Common/(SkillBtn|SkillLayout)/$(FNX)",
+                    "Target": "$(Target)/BattleSkill"
+                },
+                {
+                    "Rule": "Common/(GM|Observe)/$(DIR)*$(FNX)",
+                    "Target": "$(Target)/BattleObserve"
+                },
+                {
+                    "Rule": "Common/(Photo|Replay|(Score\\w+)|Talent|Voice)/$(FNX)",
+                    "Target": "$(Target)/BattleCommon1"
+                },
+                {
+                    "Name": "BattleCommonFallBack",
+                    "Rule": "Common/$(DIR)*$(FNX)",
+                    "Target": "$(Target)/BattleCommon2"
+                },
+                {
+                    "Rule": "$(DIR)*(?<ParentDir>\\w+)/$(FN).prefab",
+                    "Target": "$(Target)/$(ParentDir)"
+                }
+            ]
+        },
+        {
+            "Class": "UI/Prefab",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/UI",
+            "Group": "Bundles/UIPrefab",
+            "Require": [
+                "ResourcesRedundancy",
+                "FxUI",
+                "UI/CommonPrefab",
+				"UITextures_Mobile",
+                "UITextures_Switch",
+
+                "UIPrefab/Growth:UIPrefab/CommonPrefab",
+                "UIPrefab/Activity:UIPrefab/CommonPrefab",
+                "UIPrefab/HeroSelection:UIPrefab/CommonPrefab",
+                "UIPrefab/CommonPrefab:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/CommonPrefab:UITextures/Dynamic/Mall/Mall_Recharge_Gem",
+                "UIPrefab/Mail:UITextures_Mobile/Dynamic/Misc",
+                "UIPrefab/CommonPrefab:UITextures_Mobile/System/Customize_one",
+                "UIPrefab/CommonPrefab:UITextures_Mobile/System/Ranking_one",
+                "UIPrefab/Association:UIPrefab/CommonPrefab",
+                "UIPrefab/Newbie:UIPrefab/CommonPrefab",
+                "UIPrefab/Energy:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Beauty:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Activity:UITextures/Dynamic/Mall/Mall_Recharge_Gem",
+                "UIPrefab/Shop:UITextures_Mobile/Dynamic/Misc",
+                "UIPrefab/Shop:UITextures_Mobile/System/Customize_one",
+                "UIPrefab/Activity:UITextures_Mobile/System/Ranking_one",
+                "UIPrefab/Activity:Common/Shaders",
+                "UIPrefab/CommonPrefab:Common/Font_Nishiki_Font",
+                "UIPrefab/Activity:Common/Font_Nishiki_Font_chs_Bold",
+                "UIPrefab/Growth:Common/Shaders",
+                "UIPrefab/Energy:Common/Font_Nishiki_Font",
+                "UIPrefab/Growth:Common/Font_Nishiki_Font_chs_Bold",
+                "UIPrefab/Beauty:Common/Font_Nishiki_Number",
+                "UIPrefab/Ranking:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/HeldItem:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Mail:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/BadgeCollection:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Chat:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Newbie:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Shop:UITextures/Dynamic/Mall/Mall_Recharge_Gem",
+                "UIPrefab/Pokemon:UITextures_Mobile/Dynamic/Misc",
+                "UIPrefab/Lobby:FxUI_Lobby",
+                "UIPrefab/OutSideBag:UIPrefab/CommonPrefab",
+                "UIPrefab/Mail:FxUI_Lobby",
+                "UIPrefab/HeldItem:Common/Shaders",
+                "UIPrefab/Growth:Common/Font_Nishiki_Font",
+                "UIPrefab/HeldItem:Common/Font_Nishiki_Font_chs_Bold",
+                "UIPrefab/Energy:Common/Font_Nishiki_Number",
+                "UIPrefab/BackFlow:UIPrefab/CommonPrefab",
+                "UIPrefab/Settings:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/OutSideBag:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Common:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Photograph:UITextures_Mobile/Common/Bg_one",               
+                "UIPrefab/Sys2:UITextures_Mobile/Dynamic/Misc",
+                "UIPrefab/Season:FxUI_Lobby",
+                "UIPrefab/Settings:UIPrefab/CommonPrefab",
+                "UIPrefab/OutSideBag:FxUI_Lobby",
+                "UIPrefab/Mail:Common/Shaders",
+                "UIPrefab/HeldItem:Common/Font_Nishiki_Font",
+                "UIPrefab/Mail:Common/Font_Nishiki_Font_chs_Bold",
+                "UIPrefab/HeldItem:Common/Font_Nishiki_Number",
+                "UIPrefab/BackFlowOldFriend:UIPrefab/CommonPrefab",
+                "UIPrefab/Shop:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Ranking:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Customize:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Recharge:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/BackFlow:UITextures/Dynamic/Mall/Mall_Recharge_Gem",
+                "UIPrefab/Shop:UIPrefab/CommonPrefab",
+                "UIPrefab/Ranking:FxUI_Lobby",
+                "UIPrefab/OutSideBag:Common/Shaders",
+                "UIPrefab/Mail:Common/Font_Nishiki_Font",
+                "UIPrefab/OutSideBag:Common/Font_Nishiki_Font_chs_Bold",
+                "UIPrefab/Mail:Common/Font_Nishiki_Number",
+                "UIPrefab/BattleLoading:UIPrefab/CommonPrefab",
+                "UIPrefab/ActivityBattlePass:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/RoleEquip:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Entrycard:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/BackFlowOldFriend:UITextures/Dynamic/Mall/Mall_Recharge_Gem",
+                "UIPrefab/TrainerProps:UIPrefab/CommonPrefab",
+                "UIPrefab/RoleEquip:FxUI_Lobby",
+                "UIPrefab/Ranking:Common/Shaders",
+                "UIPrefab/OutSideBag:Common/Font_Nishiki_Font",
+                "UIPrefab/Ranking:Common/Font_Nishiki_Font_chs_Bold",
+                "UIPrefab/OutSideBag:Common/Font_Nishiki_Number",
+                "UIPrefab/Chat:UIPrefab/CommonPrefab",
+                "UIPrefab/BackFlow:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/TrainerProps:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Pokemon:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Friend:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/BattleLoading:UITextures/Dynamic/Mall/Mall_Recharge_Gem",
+                "UIPrefab/TrainerProps:UITextures_Mobile/System/Ranking_one",
+                "UIPrefab/Achievement:UIPrefab/CommonPrefab",
+                "UIPrefab/Settings:FxUI_Lobby",
+                "UIPrefab/RoleEquip:Common/Shaders",
+                "UIPrefab/Ranking:Common/Font_Nishiki_Font",
+                "UIPrefab/RoleEquip:Common/Font_Nishiki_Font_chs_Bold",
+                "UIPrefab/Ranking:Common/Font_Nishiki_Number",
+                "UIPrefab/Common:UIPrefab/CommonPrefab",
+                "UIPrefab/BadgeCollection:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Achievement:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Recharge:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Lobby:UITextures_Mobile/Common/Bg_one",
+                "UIPrefab/Chat:UITextures/Dynamic/Mall/Mall_Recharge_Gem",
+                "UIPrefab/Achievement:UITextures_Mobile/System/Ranking_one",
+                "UIPrefab/ActivityBattlePass:UIPrefab/CommonPrefab",
+                "UIPrefab/Shop:FxUI_Lobby"
+            ],
+            "Target": "Bundles/UIPrefab",
+            "Flags": "DisableZSTD",
+            "SubRules": [
+                {
+                    "Rule": "$(DIR)*(SkillBtn|Toggle|RedDot|Skill|SysLoading|ComLost)/$(FNX)",
+                    "Target": "Bundles/UIPrefab/Sys1"
+                },
+                {
+                    //这几个目录都是单资源，打在一起
+                    "Name": "Misc",
+                    "Rule": "$(DIR)*(GM|Photo|Share|TrainLevel|AccountBinding|RelateAccount|BirthdayInput|MusicPlayer|NewbieChallenge|NoviceFourteenthPack|TrainerLevel|ObserveBattle|SwitchPreview)/$(FNX)",
+                    "Target": "Bundles/UIPrefab/Sys2"
+                },
+                {
+                    "Rule": "$(DIR)*(?<ParentDir>\\w+)/$(FN).prefab",
+                    "Target": "Bundles/UIPrefab/$(ParentDir)"
+                }
+            ]
+        },
+        //---------------------------- UI End ----------------------------------------
+
+        //其他资源
+        {
+            //这里是Prefab，非常不适合放在Common里
+            "Class": "GeneralArt",
+            "BasePath": "Assets/OuterResources/ABResources/",
+            "Rule": "(ArtRes/Common)/$(DIR)*$(FNX)",
+            "Target": "Bundles/ArtResGeneral",
+            "Flags": "DisableZSTD",
+            //General Group
+            "Packer": "Bundle"
+        },
+
+
+        {
+            "Class": "Sound",
+            "Packer": "RawBytes",
+            "Flags": "KeepName, DontEncrypt",
+            "BasePath": "PackBytes/Sound",
+            "SubRules": [
+                {
+                    "Rule": "(?<PlatName>\\w+)_Small(?<Subdir>(/$(D))*)/$(FNX)",
+                    "Target": "Sound/$(PlatName)$(Subdir)"
+                },
+                {
+                    "Rule": "(?<SubDir>$(DIR)*$(D))/$(FNX)", //取目录名不带斜杠结束符/
+                    "Target": "Sound/$(SubDir)",
+                    "DlcId": 5000000
+                }
+            ]
+        },
+        
+        {
+            "Class": "BytesExtract",
+            "Packer": "RawBytes",
+            "Flags": "Extract, DontEncrypt",
+            "BasePath": "Assets/OuterResources/ABResources",
+            "SubPaths": [
+                "LocalizationCfg",
+                "UIConfig",
+                "GMConfig",
+                "MainCityConfig",
+                "LanguageMap",
+                "InputKeyActionMap",
+                "HeroSkins" //这个实际是IFixPatch，参考IFixConfigure.PATCH_FILE_SAVE_PATH
+            ],
+            "Target": "$(SubPath)"
+        },
+        //{
+        //    "Class": "ZipAILab",
+        //    "Packer": "Zip",
+        //    "BasePath": "Assets/OuterResources/ABResources/AILab",
+        //    "DlcId": 1000000,
+        //    "Target": "AILab"
+        //},
+
+        // Switch 专用
+        {
+            "Class": "NXCDNRes",
+            "Packer": "RawBytes",
+            "Flags": "Extract, DontEncrypt",
+            "BasePath": "CDNRes/CDNUpload/Default/",
+            "SubPaths": [
+                // "Activity"段
+                "Activity/ActivityCenter",
+                "Activity/Bg",
+                "Activity/EmergencyNotice",
+                "Activity/Notice",
+                "Activity/NoviceGift",
+                "Activity/PastTrainer",
+                "Activity/Questionnaire",
+                "Activity/SetPaintingBg",
+                "Activity/SevenDays",
+                "Activity/TabBg",
+
+                "announcement",
+                "Association",
+                "Badge",
+                "BattlePass",
+                "CustomerServiceQRCode",
+                "EntryCard",
+
+                // "Mall"段,
+                "Mall/Banner",       
+                
+                "Mall/Player/Backpack",
+                "Mall/Player/Bag",
+                "Mall/Player/Bottom",
+                "Mall/Player/Eye",
+                "Mall/Player/Foot",
+                "Mall/Player/Hair",
+                "Mall/Player/Hand",
+                "Mall/Player/Hat",
+                "Mall/Player/Outerwear",
+                "Mall/Player/Socks",
+                "Mall/Player/Suit",
+                "Mall/Player/Top",
+
+                "Mall/Props",
+                "Mall/RoleCreation",
+                "Mall/TrainerItem",
+
+                "MapHelp",
+                "MatchingResult",
+                "Monster",
+
+                // "Pokemon"段,
+                "Pokemon/Growth_Whole",
+                "Pokemon/Growth_Whole_Skill",
+                "Pokemon/HeroSelection",
+                "Pokemon/Tachie",
+                "Pokemon/TrainerReward",
+
+                "RankGetAward",
+                "ShareGet"
+            ],
+            "Target": "$(SubPath)",
+			"Platform": "Switch"
+        },
+
+        // 手机专用
+        {
+            "Class": "CDNRes",
+            "Packer": "Zip",
+            "Flags": "Extract, DontEncrypt",
+            "BasePath": "CDNRes/CDNUpload/Default/",
+            "SubPaths": [
+                 // "Activity"段
+                 "Activity/ActivityCenter",
+                 "Activity/Bg",
+                 "Activity/EmergencyNotice",
+                 "Activity/Notice",
+                 "Activity/NoviceGift",
+                 "Activity/PastTrainer",
+                 "Activity/Questionnaire",
+                 "Activity/SetPaintingBg",
+                 "Activity/SevenDays",
+                 "Activity/TabBg",
+		 
+                "Activity/ActivityShareGet",
+                "Activity/Calendar",
+                "Activity/CelebrateCollection",	
+			
+                 "announcement",
+                 "Association",
+                 "Badge",
+                 "BattlePass",
+                 "CustomerServiceQRCode",
+                 "EntryCard",
+ 
+                 // "Mall"段,
+                 "Mall/Banner",       
+                 
+                 "Mall/Player/Backpack",
+                 "Mall/Player/Bag",
+                 "Mall/Player/Bottom",
+                 "Mall/Player/Eye",
+                 "Mall/Player/Foot",
+                 "Mall/Player/Hair",
+                 "Mall/Player/Hand",
+                 "Mall/Player/Hat",
+                 "Mall/Player/Outerwear",
+                 "Mall/Player/Socks",
+                 "Mall/Player/Suit",
+                 "Mall/Player/Top",
+ 
+                 "Mall/Props",
+                 "Mall/RoleCreation",
+                 "Mall/TrainerItem",
+ 
+                 "MapHelp",
+                 "MatchingResult",
+                 "Monster",
+ 
+                 // "Pokemon"段,
+                 "Pokemon/Growth_Whole",
+                 "Pokemon/Growth_Whole_Skill",
+                 "Pokemon/HeroSelection",
+                 "Pokemon/Tachie",
+                 "Pokemon/TrainerReward",
+ 
+                 "RankGetAward",
+                 "ShareGet"
+            ],
+            "Target": "$(SubPath)"
+        },
+        {
+            "Class": "CDNRes_hash_md5",
+            "Packer": "RawBytes",
+            "Flags": "Extract, DontEncrypt",
+            "BasePath": "CDNRes/",
+            "Rule": "CDNUpload/cdn_hash_md5_size.bytes",
+            "Target": "CDN_Hash_MD5"
+        },
+        // {
+        //     "Class": "CDNRes",
+        //     "Packer": "RawBytes", // "Zip",
+        //     "Flags": "Extract, DontEncrypt",
+        //     "BasePath": "CDNRes/CDNUpload/Default/",
+        //     "SubPaths": [
+        //         // "Activity"段
+        //         "Activity/ActivityCenter",
+        //         "Activity/Bg",
+        //         "Activity/EmergencyNotice",
+        //         "Activity/Notice",
+        //         "Activity/NoviceGift",
+        //         "Activity/PastTrainer",
+        //         "Activity/Questionnaire",
+        //         "Activity/SetPaintingBg",
+        //         "Activity/SevenDays",
+        //         "Activity/TabBg",
+
+        //         "announcement",
+        //         "Association",
+        //         "Badge",
+        //         "BattlePass",
+        //         "CustomerServiceQRCode",
+        //         "EntryCard",
+
+        //         // "Mall"段,
+        //         "Mall/Banner",       
+                
+        //         "Mall/Player/Backpack",
+        //         "Mall/Player/Bag",
+        //         "Mall/Player/Bottom",
+        //         "Mall/Player/Eye",
+        //         "Mall/Player/Foot",
+        //         "Mall/Player/Hair",
+        //         "Mall/Player/Hand",
+        //         "Mall/Player/Hat",
+        //         "Mall/Player/Outerwear",
+        //         "Mall/Player/Socks",
+        //         "Mall/Player/Suit",
+        //         "Mall/Player/Top",
+
+        //         "Mall/Props",
+        //         "Mall/RoleCreation",
+        //         "Mall/TrainerItem",
+
+        //         "MapHelp",
+        //         "MatchingResult",
+        //         "Monster",
+
+        //         // "Pokemon"段,
+        //         "Pokemon/Growth_Whole",
+        //         "Pokemon/Growth_Whole_Skill",
+        //         "Pokemon/HeroSelection",
+        //         "Pokemon/Tachie",
+        //         "Pokemon/TrainerReward",
+
+        //         "RankGetAward",
+        //         "ShareGet"
+        //     ],
+        //     "Target": "$(SubPath)"
+        // },
+        // {  // 兜底逻辑
+        //     "Class": "CDNResOthers",
+        //     "Packer": "RawBytes", // "Zip",
+        //     "Flags": "Extract, DontEncrypt",
+        //     "BasePath": "CDNRes/CDNUpload/Default/",
+        //     "Rule": "$(DIR)*$(D ParentDir)/$(FNX)", //取最后一级目录
+        //     "Target": "CDNRes/Others/$(ParentDir)"
+        // },
+        // {
+        //     "Class": "CDNRes_hash_md5",
+        //     "Packer": "RawBytes",
+        //     "Flags": "Extract, DontEncrypt",
+        //     "BasePath": "CDNRes/",
+        //     "Rule": "CDNUpload/cdn_hash_md5_size.bytes",
+        //     "Target": "CDN_Hash_MD5"
+        // },
+        {
+            "Class": "LiteZipFiles",
+            "Packer": "Zip",
+            "BasePath": "Assets/OuterResources/ABResources/",
+            "SubPaths": [
+                "SwitchInputCfg", //合入Rel配置后打包
+                "SwitchHidVibration" //合入Rel配置后打包
+            ],
+            "DlcId": 0,
+            "Target": "$(SubPath)"
+        },
+        {
+            "Class": "ZipFiles",
+            "Packer": "Zip",
+            "BasePath": "Assets/OuterResources/ABResources/",
+            "SubPaths": [
+                "Behaviac",
+                "Navmesh",
+                "Scenes",
+                "CurveDatas",
+                "WwiseEvents",
+                "CityPVS"
+            ],
+            "Target": "$(SubPath)"
+        },
+        {
+            "Class": "ZipPackFiles",
+            "Packer": "Zip",
+            "BasePath": "PackBytes/",
+            "SubPaths": [
+                "Databins",
+                "Lua/C",
+                "Lua/L"
+            ],
+            "Target": "$(SubPath)"
+        },
+        {
+            "Class": "ZipPackAgeFiles",
+            "Packer": "Zip",
+            "BasePath": "PackBytes/Age/",
+            "SubRules": [
+                {
+                    "Name": "Age04",
+                    "Rule": "([0-4]{1})(.*).bytes",
+                    "Target": "Age04"
+                },
+                {
+                    "Name": "Age59",
+                    "Rule": "([5-9]{1})(.*).bytes",
+                    "Target": "Age59"
+                },
+                {
+                    "Name": "AgeAN",
+                    "Rule": "([a-nA-N]{1})(.*).bytes",
+                    "Target": "AgeAN"
+                },
+                {
+                    "Name": "AgeOZ",
+                    "Rule": "([o-zO-Z]{1})(.*).bytes",
+                    "Target": "AgeOZ"
+                }
+            ]
+        },
+        {
+            "Class": "ZipPackLuaMFiles",
+            "Packer": "Zip",
+            "BasePath": "PackBytes/Lua/M/",
+            "SubRules": [
+                {
+                    "Name": "LobbyAF",
+                    "Rule": "(?:Lobby)/([a-fA-F]{1})(.*).bytes",
+                    "Target": "Lua/M/LobbyAF"
+                },
+                {
+                    "Name": "LobbyGN",
+                    "Rule": "(?:Lobby)/([g-nG-N]{1})(.*).bytes",
+                    "Target": "Lua/M/LobbyGN"
+                },
+                {
+                    "Name": "LobbyOZ",
+                    "Rule": "(?:Lobby)/([o-zO-Z]{1})(.*).bytes",
+                    "Target": "Lua/M/LobbyOZ"
+                },
+                {
+                    "Name": "Others",
+                    "Rule": "(?!Lobby)\\w+/(.*).bytes",
+                    "Target": "Lua/M/Others"
+                }
+            ]
+        },
+        {
+            "Class": "ZipPackOfflineWarmupFiles",
+            "Packer": "Zip",
+            "BasePath": "PackBytes/OfflineWarmup/",
+            "SubRules": [
+                {
+                    "Name": "Hero",
+                    "Rule": "(?:Hero)/(.*).bytes",
+                    "Target": "OfflineWarmup/Hero"
+                },
+                {
+                    "Name": "Scene",
+                    "Rule": "(?:Scene)/(.*).bytes",
+                    "Target": "OfflineWarmup/Scene"
+                },
+                {
+                    "Name": "Others",
+                    "Rule": "(?!Hero|Scene)/(.*).bytes",
+                    "Target": "OfflineWarmup/Others"
+                }
+            ]
+        },
+        {
+            "Class": "ZipActorEntity",
+            "Packer": "Zip",
+            "Flags": "DontCompress",
+            "BasePath": "PackBytes/",
+            "SubPaths": [
+                "Actors",
+                "Entities"
+            ],
+            "Target": "$(SubPath)"
+        },
+
+        {
+            "Class": "LiteVideo",
+            "Packer": "RawBytes",
+            "Flags": "DontEncrypt",
+            "BasePath": "Assets/OuterResources/ABResources/LocalizationRes",
+            "Rule": "$(DIR)+LiteVideo/",
+            "Target": "LiteVideo"
+        },
+        {
+            "Class": "DLCVideo",
+            "Packer": "RawBytes",
+            "Flags": "DontEncrypt",
+            "BasePath": "Assets/OuterResources/ABResources/LocalizationRes",
+            "Rule": "$(DIR)+DLCVideo/",
+            "DlcId": 8000000,
+            "Target": "DLCVideo"
+        },
+        {
+            "Class": "LocalizationBytes",
+            "Packer": "Zip",
+            "BasePath": "PackBytes/LocalizationRes/",
+            "Rule": "(?<Region>\\w+)/$(D Lang)/$(DIR)*$(FN).msbt$", //取父目录名
+            "Flags": "DisableZSTD",
+            "Target": "MSBTFiles/$(Region)_$(Lang)_Msbt"
+        },
+        {
+            "Class": "Localization",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/LocalizationRes/",
+            "Rule": "(?<Region>Global|Domestic)/$(D Lang)/$(DIR)*$(FNX)",
+            "Target": "Bundles/LocalizationRes/$(Region)_$(Lang)"
+        },
+        {
+            "Class": "VisionDebugger",
+            "BasePath": "Assets/OuterResources/ABResources/VisionDebugger",
+            "Target": "Bundles/VisionDebugger",
+            "Group": "VisionDebugger",
+            "Flags": "DisableZSTD",
+            "Packer": "Bundle"
+        },
+
+        {
+            "Class": "DynamicCard",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/DynamicCard/",
+            "Rule": "$(DIR)*$(FN FileName)$(EXT)",
+            "Target": "Bundles/DynamicCard",
+            "Group": "DynamicCard",
+            "DlcId": 0
+        },
+
+        {
+            "Class": "BadgeDlc",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/BadgeItem/",
+            "Rule": "$(DIR)*$(D ParentDir)/$(FNX)",
+            "Target": "Bundles/Badge/$(ParentDir)",
+            "Group": "Badge",
+            "DlcId": 10000000
+        },
+		{
+			"Class": "Guide",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/Guide/",
+            "Rule": "$(DIR)*$(FN FileName)$(EXT)",
+            "Target": "Bundles/Guide",
+            "Group": "Guide",
+            "DlcId": 0
+		},
+        {
+            "Class": "Misc",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/",
+            "Rule": "(Camera|MaterialEffect|Spawner|ArtRes/(Nav|TestRes)|CustMapDataEditorRes|ScriptableAssets)/$(FNX)",
+            "Target": "Bundles/Misc"
+        },
+        //兜底逻辑
+        {
+            "Class": "FallBack(Art)",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/ArtRes/",
+            "Rule": "$(DIR)*$(D ParentDir)/$(FNX)", //取最后一级目录
+            "Target": "Bundles/Others/$(ParentDir)"
+        },
+        {
+            "Class": "FallBack(All)",
+            "Packer": "Bundle",
+            "BasePath": "Assets/OuterResources/ABResources/",
+            "Rule": "$(DIR)*$(D ParentDir)/$(FNX)", //取最后一级目录
+            "Target": "Bundles/Others/$(ParentDir)"
+        }
+    ]
+}
